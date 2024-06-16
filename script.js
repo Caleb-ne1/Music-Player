@@ -1,80 +1,67 @@
 const musicContainer = document.getElementById("music-container");
-const playButton = document.getElementById("play");
-const prevButton = document.getElementById("prev");
-const nextButton = document.getElementById("next");
 const audio = document.getElementById("audio");
 const progress = document.getElementById("progress");
 const progressContainer = document.getElementById("progress-container");
-const title = document.getElementById("title");
-const cover = document.getElementById("cover");
 
-const songs = ["hey", "summer", "ukulele"];
-let songIndex = 1;
 
-function getSongTitle(song) {
-  return song.charAt(0).toUpperCase() + song.slice(1);
-}
 
-function loadSong(song) {
-  title.innerText = getSongTitle(song);
-  audio.src = `https://github.com/bradtraversy/vanillawebprojects/blob/master/music-player/music/${song}.mp3?raw=true`;
-  cover.src = `https://github.com/bradtraversy/vanillawebprojects/blob/master/music-player/images/${song}.jpg?raw=true`;
-}
+document.addEventListener('DOMContentLoaded', () => {
+  const fileButton = document.getElementById('fileButton');
+  const fileInput = document.getElementById('fileInput');
+  const playlist = document.getElementById('playlist');
+  const audioPlayer = document.getElementById('audioPlayer');
+  let currentPlaying = null;
 
-function playSong() {
-  musicContainer.classList.add("play");
-  playButton.querySelector("i.fas").classList.remove("fa-play");
-  playButton.querySelector("i.fas").classList.add("fa-pause");
-  audio.play();
-}
+  fileButton.addEventListener('click', () => {
+      fileInput.click();
+  });
 
-function pauseSong() {
-  musicContainer.classList.remove("play");
-  playButton.querySelector("i.fas").classList.remove("fa-pause");
-  playButton.querySelector("i.fas").classList.add("fa-play");
-  audio.pause();
-}
+  fileInput.addEventListener('change', handleFiles);
 
-function prevSong() {
-  songIndex--;
-  if (songIndex < 0) songIndex = songs.length - 1;
-  loadSong(songs[songIndex]);
-  playSong();
-}
+  function handleFiles() {
+      const files = this.files;
+      for (let i = 0; i < files.length; i++) {
+          const file = files[i];
+          const listItem = document.createElement('li');
+          listItem.textContent = file.name;
 
-function nextSong() {
-  songIndex++;
-  if (songIndex > songs.length - 1) songIndex = 0;
-  loadSong(songs[songIndex]);
-  playSong();
-}
+          const removeButton = document.createElement('button');
+          removeButton.textContent = 'Remove';
+          removeButton.classList.add('remove-button');
+          removeButton.addEventListener('click', (event) => {
+              event.stopPropagation();
+              listItem.remove();
+              if (audioPlayer.src === URL.createObjectURL(file)) {
+                  audioPlayer.pause();
+                  audioPlayer.src = '';
+                  currentPlaying = null;
+              }
+          });
 
-function updateProgress(e) {
-  const { duration, currentTime } = e.srcElement;
-  const progressPercent = (currentTime / duration) * 100;
-  progress.style.width = `${progressPercent}%`;
-}
+          listItem.addEventListener('click', () => {
+              if (audioPlayer.src === URL.createObjectURL(file)) {
+                  if (audioPlayer.paused) {
+                      audioPlayer.play();
+                  } else {
+                      audioPlayer.pause();
+                  }
+              } else {
+                  audioPlayer.src = URL.createObjectURL(file);
+                  audioPlayer.play();
+              }
+              updatePlaying(listItem);
+          });
 
-function setProgress(e) {
-  const width = this.clientWidth;
-  const clickX = e.offsetX;
-  const duration = audio.duration;
-  audio.currentTime = (clickX / width) * duration;
-}
+          listItem.appendChild(removeButton);
+          playlist.appendChild(listItem);
+      }
+  }
 
-// Event Listeners
-playButton.addEventListener("click", () => {
-  const isPlaying = musicContainer.classList.contains("play");
-  isPlaying ? pauseSong() : playSong();
+  function updatePlaying(listItem) {
+      if (currentPlaying) {
+          currentPlaying.classList.remove('playing');
+      }
+      listItem.classList.add('playing');
+      currentPlaying = listItem;
+  }
 });
-
-prevButton.addEventListener("click", prevSong);
-nextButton.addEventListener("click", nextSong);
-
-audio.addEventListener("timeupdate", updateProgress);
-progressContainer.addEventListener("click", setProgress);
-
-audio.addEventListener("ended", nextSong);
-
-// Init
-loadSong(songs[songIndex]);
